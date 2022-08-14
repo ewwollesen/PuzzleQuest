@@ -24,10 +24,16 @@ var all_gems: Array = []
 # Click  variables
 var first_click: Vector2 = Vector2.ZERO
 var final_click: Vector2 = Vector2.ZERO
+var controlling: bool = false
 
 func _ready() -> void:
 	all_gems = make_array()
 	spawn_gems()
+	#print(all_gems)
+
+
+func _process(_delta: float) -> void:
+	ui_click()
 
 
 func make_array() -> Array:
@@ -61,7 +67,6 @@ func spawn_gems():
 
 
 func match_at(column: int, row: int, type: String) -> bool:
-	var default_return = false
 	if column > 1:
 		if all_gems[column - 1][row] != null and all_gems[column - 2][row]:
 			if all_gems[column - 1][row].type == type and all_gems[column - 2][row].type == type:
@@ -71,17 +76,62 @@ func match_at(column: int, row: int, type: String) -> bool:
 		if all_gems[column][row - 1] != null and all_gems[column][row - 2]:
 			if all_gems[column][row - 1].type == type and all_gems[column][row - 2].type == type:
 				return true
-	return default_return
+	return false
 
 
 func grid_to_pixel(column: int, row: int) -> Vector2:
-	var new_x = X_START + OFFSET * row
-	var new_y = Y_START - OFFSET * column
+	var new_x = X_START + OFFSET * column
+	var new_y = Y_START - OFFSET * row
 	return Vector2(new_x, new_y)
 	
+	
+func pixel_to_grid(pixel_x: float, pixel_y: float) -> Vector2:
+	var new_x: int = round((pixel_x - X_START) / OFFSET)	
+	var new_y: int = round((pixel_y - Y_START) / -OFFSET)
+	return Vector2(new_x, new_y)
 
-func ui_click():
+
+func is_in_grid(column: int, row: int) -> bool:
+	if column >= 0 and column < WIDTH:
+		if row >= 0 and row < HEIGHT:
+			return true
+	return false
+	
+	
+func ui_click() -> void:
 	if Input.is_action_just_pressed("ui_click"):
 		first_click = get_global_mouse_position()
+		var grid_position: Vector2 = pixel_to_grid(first_click.x, first_click.y)
+		print("click grid position: ", grid_position)
+		if is_in_grid(grid_position.x, grid_position.y):
+			controlling = true
+
 	if Input.is_action_just_released("ui_click"):
 		final_click = get_global_mouse_position()
+		var grid_position: Vector2 = pixel_to_grid(final_click.x, final_click.y)
+		print("release grid position: ", grid_position)
+		if is_in_grid(grid_position.x, grid_position.y) and controlling:
+			click_difference(pixel_to_grid(first_click.x, first_click.y), grid_position)
+
+
+func swap_gems(column: int, row: int, direction: Vector2) -> void:
+	var first_gem: Node2D = all_gems[column][row]
+	var other_gem: Node2D = all_gems[column + direction.x][row + direction.y]
+	all_gems[column][row] = other_gem
+	all_gems[column + direction.x][row + direction.y] = first_gem
+	first_gem.position = grid_to_pixel(column + direction.x, row + direction.y)
+	other_gem.position = grid_to_pixel(column, row)
+	
+	
+func click_difference(grid_start, grid_end) -> void:
+	var difference: Vector2 = grid_end - grid_start
+	if abs(difference.x) > abs(difference.y):
+		if difference.x > 0:
+			swap_gems(grid_start.x, grid_start.y, Vector2.RIGHT)
+		elif difference.x < 0:
+			swap_gems(grid_start.x, grid_start.y, Vector2.LEFT)
+	elif abs(difference.y) > abs(difference.x):
+		if difference.y > 0:
+			swap_gems(grid_start.x, grid_start.y, Vector2.DOWN)
+		elif difference.y < 0:
+			swap_gems(grid_start.x, grid_start.y, Vector2.UP)
