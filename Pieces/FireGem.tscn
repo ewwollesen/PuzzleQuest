@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=2]
+
+[ext_resource path="res://Assets/Icons/fire.png" type="Texture" id=1]
+[ext_resource path="res://Pieces/Gem.tscn" type="PackedScene" id=2]
+
+[node name="FireGem" instance=ExtResource( 2 )]
+type = "fire"
+
+[node name="Sprite" parent="." index="0"]
+modulate = Color( 0.933333, 0.0352941, 0.0352941, 1 )
+texture = ExtResource( 1 )
