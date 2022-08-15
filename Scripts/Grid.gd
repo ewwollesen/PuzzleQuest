@@ -112,6 +112,7 @@ func ui_click() -> void:
 		print("release grid position: ", grid_position)
 		if is_in_grid(grid_position.x, grid_position.y) and controlling:
 			click_difference(pixel_to_grid(first_click.x, first_click.y), grid_position)
+			controlling = false
 
 
 func swap_gems(column: int, row: int, direction: Vector2) -> void:
@@ -119,9 +120,11 @@ func swap_gems(column: int, row: int, direction: Vector2) -> void:
 	var other_gem: Node2D = all_gems[column + direction.x][row + direction.y]
 	all_gems[column][row] = other_gem
 	all_gems[column + direction.x][row + direction.y] = first_gem
-	first_gem.position = grid_to_pixel(column + direction.x, row + direction.y)
-	other_gem.position = grid_to_pixel(column, row)
-	
+	#first_gem.position = grid_to_pixel(column + direction.x, row + direction.y)
+	#other_gem.position = grid_to_pixel(column, row)
+	first_gem.move(grid_to_pixel(column + direction.x, row + direction.y))
+	other_gem.move(grid_to_pixel(column, row))
+		
 	
 func click_difference(grid_start, grid_end) -> void:
 	var difference: Vector2 = grid_end - grid_start
