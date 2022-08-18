@@ -91,29 +91,25 @@ func pixel_to_grid(pixel_x: float, pixel_y: float) -> Vector2:
 	return Vector2(new_x, new_y)
 
 
-func is_in_grid(column: int, row: int) -> bool:
-	if column >= 0 and column < WIDTH:
-		if row >= 0 and row < HEIGHT:
+func is_in_grid(grid_position: Vector2) -> bool:
+	if grid_position.x >= 0 and grid_position.x < WIDTH:
+		if grid_position.y >= 0 and grid_position.y < HEIGHT:
 			return true
 	return false
 	
 	
 func ui_click() -> void:
 	if Input.is_action_just_pressed("ui_click"):
-		first_click = get_global_mouse_position()
-		var grid_position: Vector2 = pixel_to_grid(first_click.x, first_click.y)
-		print("click grid position: ", grid_position)
-		if is_in_grid(grid_position.x, grid_position.y):
+		if is_in_grid(pixel_to_grid(get_global_mouse_position().x, get_global_mouse_position().y)):
+			first_click = pixel_to_grid(get_global_mouse_position().x, get_global_mouse_position().y)
 			controlling = true
-
+			
 	if Input.is_action_just_released("ui_click"):
-		final_click = get_global_mouse_position()
-		var grid_position: Vector2 = pixel_to_grid(final_click.x, final_click.y)
-		print("release grid position: ", grid_position)
-		if is_in_grid(grid_position.x, grid_position.y) and controlling:
-			click_difference(pixel_to_grid(first_click.x, first_click.y), grid_position)
+		if is_in_grid(pixel_to_grid(get_global_mouse_position().x, get_global_mouse_position().y)) and controlling:
 			controlling = false
-
+			final_click = pixel_to_grid(get_global_mouse_position().x, get_global_mouse_position().y)
+			click_difference(first_click, final_click)
+				
 
 func swap_gems(column: int, row: int, direction: Vector2) -> void:
 	var first_gem: Node2D = all_gems[column][row]
@@ -124,6 +120,7 @@ func swap_gems(column: int, row: int, direction: Vector2) -> void:
 	#other_gem.position = grid_to_pixel(column, row)
 	first_gem.move(grid_to_pixel(column + direction.x, row + direction.y))
 	other_gem.move(grid_to_pixel(column, row))
+	find_matches()
 		
 	
 func click_difference(grid_start, grid_end) -> void:
@@ -138,3 +135,28 @@ func click_difference(grid_start, grid_end) -> void:
 			swap_gems(grid_start.x, grid_start.y, Vector2.DOWN)
 		elif difference.y < 0:
 			swap_gems(grid_start.x, grid_start.y, Vector2.UP)
+
+
+func find_matches():
+	for column in WIDTH:
+		for row in HEIGHT:
+			if all_gems[column][row] != null:
+				var current_type: String = all_gems[column][row].type
+				if column > 0 and column < WIDTH - 1:
+					if all_gems[column - 1][row] != null and all_gems[column + 1][row] != null:
+						if all_gems[column - 1][row].type == current_type and all_gems[column + 1][row].type == current_type:
+							all_gems[column - 1][row].matched = true
+							all_gems[column - 1][row].dim()
+							all_gems[column][row].matched = true
+							all_gems[column][row].dim()
+							all_gems[column + 1][row].matched = true
+							all_gems[column + 1][row].dim()
+					if row > 0 and row < HEIGHT - 1:
+						if all_gems[column][row - 1] != null and all_gems[column][row + 1] != null:
+							if all_gems[column][row - 1].type == current_type and all_gems[column][row + 1].type == current_type:
+								all_gems[column][row - 1].matched = true
+								all_gems[column][row - 1].dim()
+								all_gems[column][row].matched = true
+								all_gems[column][row].dim()
+								all_gems[column][row + 1].matched = true
+								all_gems[column][row + 1].dim()
