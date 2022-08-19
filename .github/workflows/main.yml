@@ -1,11 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-on:
-  workflow_call:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
+name: CI
 
 env:
   GODOT_VERSION: 3.5
