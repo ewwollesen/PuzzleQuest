@@ -25,3 +25,19 @@ texture = ExtResource( 2 )
 
 [node name="PlayArea" type="Node2D" parent="."]
 script = ExtResource( 1 )
+
+[node name="DestroyTimer" type="Timer" parent="."]
+wait_time = 0.5
+one_shot = true
+
+[node name="CollapseTimer" type="Timer" parent="."]
+wait_time = 0.5
+one_shot = true
+
+[node name="RefillTimer" type="Timer" parent="."]
+wait_time = 0.5
+one_shot = true
+
+[connection signal="timeout" from="DestroyTimer" to="PlayArea" method="_on_DestroyTimer_timeout"]
+[connection signal="timeout" from="CollapseTimer" to="PlayArea" method="_on_CollapseTimer_timeout"]
+[connection signal="timeout" from="RefillTimer" to="PlayArea" method="_on_RefillTimer_timeout"]
