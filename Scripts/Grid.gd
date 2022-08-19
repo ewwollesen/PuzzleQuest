@@ -26,6 +26,10 @@ var first_click: Vector2 = Vector2.ZERO
 var final_click: Vector2 = Vector2.ZERO
 var controlling: bool = false
 
+onready var destroyTimer: = $"../DestroyTimer"
+onready var collapseTimer: = $"../CollapseTimer"
+onready var refillTimer: = $"../RefillTimer"
+
 func _ready() -> void:
 	all_gems = make_array()
 	spawn_gems()
@@ -49,21 +53,21 @@ func make_array() -> Array:
 func spawn_gems():
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
-	for x in WIDTH:
-		for y in HEIGHT:
+	for column in WIDTH:
+		for row in HEIGHT:
 			# Choose a random number
 			var rand: int = rng.randi_range(0, possible_gems.size() - 1)
 			# Instance that piece from the array
 			var gem = possible_gems[rand].instance()
 			var count: int = 0
-			while(match_at(x, y, gem.type) and count < 100):
+			while(match_at(column, row, gem.type) and count < 100):
 				rand = rng.randi_range(0, possible_gems.size() - 1)
 				gem = possible_gems[rand].instance()
 				count += 1
 
 			add_child(gem)
-			gem.position = grid_to_pixel(x, y)
-			all_gems[x][y] = gem
+			gem.position = grid_to_pixel(column, row)
+			all_gems[column][row] = gem
 
 
 func match_at(column: int, row: int, type: String) -> bool:
@@ -114,13 +118,12 @@ func ui_click() -> void:
 func swap_gems(column: int, row: int, direction: Vector2) -> void:
 	var first_gem: Node2D = all_gems[column][row]
 	var other_gem: Node2D = all_gems[column + direction.x][row + direction.y]
-	all_gems[column][row] = other_gem
-	all_gems[column + direction.x][row + direction.y] = first_gem
-	#first_gem.position = grid_to_pixel(column + direction.x, row + direction.y)
-	#other_gem.position = grid_to_pixel(column, row)
-	first_gem.move(grid_to_pixel(column + direction.x, row + direction.y))
-	other_gem.move(grid_to_pixel(column, row))
-	find_matches()
+	if first_gem != null and other_gem != null:
+		all_gems[column][row] = other_gem
+		all_gems[column + direction.x][row + direction.y] = first_gem
+		first_gem.move(grid_to_pixel(column + direction.x, row + direction.y))
+		other_gem.move(grid_to_pixel(column, row))
+		find_matches()
 		
 	
 func click_difference(grid_start, grid_end) -> void:
@@ -137,7 +140,7 @@ func click_difference(grid_start, grid_end) -> void:
 			swap_gems(grid_start.x, grid_start.y, Vector2.UP)
 
 
-func find_matches():
+func find_matches() -> void:
 	for column in WIDTH:
 		for row in HEIGHT:
 			if all_gems[column][row] != null:
@@ -160,3 +163,59 @@ func find_matches():
 								all_gems[column][row].dim()
 								all_gems[column][row + 1].matched = true
 								all_gems[column][row + 1].dim()
+	destroyTimer.start()
+
+func destroy_match() -> void:
+	for column in WIDTH:
+		for row in HEIGHT:
+			if all_gems[column][row] != null:
+				if all_gems[column][row].matched:
+					all_gems[column][row].queue_free()
+					all_gems[column][row] = null
+	collapseTimer.start()
+
+
+func collapse_columns():
+	for column in WIDTH:
+		for row in HEIGHT:
+			if all_gems[column][row] == null:
+				for cell in range(row + 1, HEIGHT):
+					if all_gems[column][cell] != null:
+						all_gems[column][cell].collapse(grid_to_pixel(column, row))
+						all_gems[column][row] = all_gems[column][cell]
+						all_gems[column][cell] = null
+						break
+	refillTimer.start()
+
+
+func refill_columns():
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	for column in WIDTH:
+		for row in HEIGHT:
+			if all_gems[column][row] == null:
+				# Choose a random number
+				var rand: int = rng.randi_range(0, possible_gems.size() - 1)
+				# Instance that piece from the array
+				var gem = possible_gems[rand].instance()
+				var count: int = 0
+				while(match_at(column, row, gem.type) and count < 100):
+					rand = rng.randi_range(0, possible_gems.size() - 1)
+					gem = possible_gems[rand].instance()
+					count += 1
+
+				add_child(gem)
+				gem.position = grid_to_pixel(column, row)
+				all_gems[column][row] = gem
+
+
+func _on_DestroyTimer_timeout():
+	destroy_match()
+
+
+func _on_CollapseTimer_timeout():
+	collapse_columns()
+
+
+func _on_RefillTimer_timeout():
+	refill_columns()
