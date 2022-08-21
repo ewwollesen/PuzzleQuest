@@ -6,6 +6,7 @@ const HEIGHT: int = 8
 const X_START: int = 336
 const Y_START: int = 1040
 const OFFSET: int = 64
+const Y_OFFSET: int = 2
 
 # The gems array
 var possible_gems: Array = [
@@ -41,7 +42,7 @@ func _process(_delta: float) -> void:
 
 
 func make_array() -> Array:
-	var array = []
+	var array: Array = []
 	
 	for x in WIDTH:
 		array.append([])
@@ -64,7 +65,6 @@ func spawn_gems():
 				rand = rng.randi_range(0, possible_gems.size() - 1)
 				gem = possible_gems[rand].instance()
 				count += 1
-
 			add_child(gem)
 			gem.position = grid_to_pixel(column, row)
 			all_gems[column][row] = gem
@@ -119,6 +119,8 @@ func swap_gems(column: int, row: int, direction: Vector2) -> void:
 	var first_gem: Node2D = all_gems[column][row]
 	var other_gem: Node2D = all_gems[column + direction.x][row + direction.y]
 	if first_gem != null and other_gem != null:
+		print("First_gem column: ", column, " row: ", row)
+		print("Other_gem column: ", column, " row: ", row)
 		all_gems[column][row] = other_gem
 		all_gems[column + direction.x][row + direction.y] = first_gem
 		first_gem.move(grid_to_pixel(column + direction.x, row + direction.y))
@@ -154,15 +156,15 @@ func find_matches() -> void:
 							all_gems[column][row].dim()
 							all_gems[column + 1][row].matched = true
 							all_gems[column + 1][row].dim()
-					if row > 0 and row < HEIGHT - 1:
-						if all_gems[column][row - 1] != null and all_gems[column][row + 1] != null:
-							if all_gems[column][row - 1].type == current_type and all_gems[column][row + 1].type == current_type:
-								all_gems[column][row - 1].matched = true
-								all_gems[column][row - 1].dim()
-								all_gems[column][row].matched = true
-								all_gems[column][row].dim()
-								all_gems[column][row + 1].matched = true
-								all_gems[column][row + 1].dim()
+				if row > 0 and row < HEIGHT - 1:
+					if all_gems[column][row - 1] != null and all_gems[column][row + 1] != null:
+						if all_gems[column][row - 1].type == current_type and all_gems[column][row + 1].type == current_type:
+							all_gems[column][row - 1].matched = true
+							all_gems[column][row - 1].dim()
+							all_gems[column][row].matched = true
+							all_gems[column][row].dim()
+							all_gems[column][row + 1].matched = true
+							all_gems[column][row + 1].dim()
 	destroyTimer.start()
 
 func destroy_match() -> void:
@@ -203,9 +205,9 @@ func refill_columns():
 					rand = rng.randi_range(0, possible_gems.size() - 1)
 					gem = possible_gems[rand].instance()
 					count += 1
-
 				add_child(gem)
-				gem.position = grid_to_pixel(column, row)
+				gem.position = grid_to_pixel(column, row - Y_OFFSET)
+				gem.collapse(grid_to_pixel(column, row))
 				all_gems[column][row] = gem
 
 
