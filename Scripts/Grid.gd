@@ -1,5 +1,11 @@
 extends Node2D
 
+# States for state machine
+enum {
+	WAIT,
+	MOVE,
+}
+
 # Play area variables
 const WIDTH: int = 8
 const HEIGHT: int = 8
@@ -27,18 +33,29 @@ var first_click: Vector2 = Vector2.ZERO
 var final_click: Vector2 = Vector2.ZERO
 var controlling: bool = false
 
+# State variable
+var state: int
+
+# Swap back variabls
+var gem_one: Object = null
+var gem_two: Object = null
+var last_position: Vector2 = Vector2.ZERO
+var last_direction: Vector2 = Vector2.ZERO
+var move_checked: bool = false
+
 onready var destroyTimer: = $"../DestroyTimer"
 onready var collapseTimer: = $"../CollapseTimer"
 onready var refillTimer: = $"../RefillTimer"
 
 func _ready() -> void:
+	state = MOVE
 	all_gems = make_array()
 	spawn_gems()
-	#print(all_gems)
 
 
 func _process(_delta: float) -> void:
-	ui_click()
+	if state == MOVE:
+		ui_click()
 
 
 func make_array() -> Array:
@@ -119,15 +136,33 @@ func swap_gems(column: int, row: int, direction: Vector2) -> void:
 	var first_gem: Node2D = all_gems[column][row]
 	var other_gem: Node2D = all_gems[column + direction.x][row + direction.y]
 	if first_gem != null and other_gem != null:
-		print("First_gem column: ", column, " row: ", row)
-		print("Other_gem column: ", column, " row: ", row)
+		store_gems(first_gem, other_gem, Vector2(column, row), direction)
+		state = WAIT
+		#print("First_gem column: ", column, " row: ", row)
+		#print("Other_gem column: ", column, " row: ", row)
 		all_gems[column][row] = other_gem
 		all_gems[column + direction.x][row + direction.y] = first_gem
 		first_gem.move(grid_to_pixel(column + direction.x, row + direction.y))
 		other_gem.move(grid_to_pixel(column, row))
-		find_matches()
+		if not move_checked:
+			find_matches()
+
+
+func store_gems(first_gem, other_gem, place, direction):
+	gem_one = first_gem
+	gem_two = other_gem
+	last_position = place
+	last_direction = direction
+
+
+func swap_back():
+	if gem_one != null and gem_two != null:
+		swap_gems(last_position.x, last_position.y, last_direction)
+	state = MOVE
+	move_checked = false
+	print("no match")
+
 		
-	
 func click_difference(grid_start, grid_end) -> void:
 	var difference: Vector2 = grid_end - grid_start
 	if abs(difference.x) > abs(difference.y):
@@ -168,16 +203,22 @@ func find_matches() -> void:
 	destroyTimer.start()
 
 func destroy_match() -> void:
+	var was_matched: bool = false
 	for column in WIDTH:
 		for row in HEIGHT:
 			if all_gems[column][row] != null:
 				if all_gems[column][row].matched:
+					was_matched = true
 					all_gems[column][row].queue_free()
 					all_gems[column][row] = null
-	collapseTimer.start()
+	move_checked = true
+	if was_matched:
+		collapseTimer.start()
+	else:
+		swap_back()
 
 
-func collapse_columns():
+func collapse_columns() -> void:
 	for column in WIDTH:
 		for row in HEIGHT:
 			if all_gems[column][row] == null:
@@ -190,7 +231,7 @@ func collapse_columns():
 	refillTimer.start()
 
 
-func refill_columns():
+func refill_columns() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	for column in WIDTH:
@@ -209,6 +250,19 @@ func refill_columns():
 				gem.position = grid_to_pixel(column, row - Y_OFFSET)
 				gem.collapse(grid_to_pixel(column, row))
 				all_gems[column][row] = gem
+	after_refill()
+
+
+func after_refill() -> void:
+	for column in WIDTH:
+		for row in HEIGHT:
+			if all_gems[column][row] != null:
+				if match_at(column, row, all_gems[column][row].type):
+					find_matches()
+					destroyTimer.start()
+					return
+	state = MOVE
+	move_checked = false
 
 
 func _on_DestroyTimer_timeout():
