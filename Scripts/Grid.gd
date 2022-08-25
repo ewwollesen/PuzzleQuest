@@ -43,9 +43,23 @@ var last_position: Vector2 = Vector2.ZERO
 var last_direction: Vector2 = Vector2.ZERO
 var move_checked: bool = false
 
+# Score variables
+var earth_score: int = 0
+var fire_score: int = 0
+var water_score: int = 0 
+var wind_score: int = 0
+var gold_score: int = 0
+var xp_score: int = 0
+
 onready var destroyTimer: = $"../DestroyTimer"
 onready var collapseTimer: = $"../CollapseTimer"
 onready var refillTimer: = $"../RefillTimer"
+onready var fireScore: = $"../VBoxContainer/FireScore"
+onready var windScore: = $"../VBoxContainer/Wind"
+onready var earthScore: = $"../VBoxContainer/Earth"
+onready var waterScore: = $"../VBoxContainer/Water"
+onready var xpScore: = $"../VBoxContainer/XP"
+onready var goldScore: = $"../VBoxContainer/Gold"
 
 func _ready() -> void:
 	state = MOVE
@@ -201,6 +215,35 @@ func find_matches() -> void:
 							all_gems[column][row + 1].matched = true
 							all_gems[column][row + 1].dim()
 	destroyTimer.start()
+	
+
+func keep_score(type):
+	print(type)
+	if type == "earth":
+		earth_score += 1
+		earthScore.text = "Earth: {0}".format([earth_score])
+		print("earth: ", earth_score)
+	elif type == "fire":
+		fire_score += 1
+		fireScore.text = "Fire: {0}".format([fire_score])
+		print("fire: ", fire_score)
+	elif type == "water":
+		water_score += 1
+		waterScore.text = "Water: {0}".format([water_score])
+		print("water: ", water_score)
+	elif type == "wind":
+		wind_score += 1
+		windScore.text = "Wind: {0}".format([wind_score])
+		print("wind: ", wind_score)
+	elif type == "gold":
+		gold_score += 1
+		goldScore.text = "Gold: {0}".format([gold_score])
+		print("gold: ", gold_score)
+	elif type == "xp":
+		xp_score += 1
+		xpScore.text = "XP: {0}".format([xp_score])
+		print("xp: ", xp_score)
+
 
 func destroy_match() -> void:
 	var was_matched: bool = false
@@ -209,6 +252,7 @@ func destroy_match() -> void:
 			if all_gems[column][row] != null:
 				if all_gems[column][row].matched:
 					was_matched = true
+					keep_score(all_gems[column][row].type)
 					all_gems[column][row].queue_free()
 					all_gems[column][row] = null
 	move_checked = true
