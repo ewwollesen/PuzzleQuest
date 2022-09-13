@@ -39,47 +39,51 @@ one_shot = true
 wait_time = 0.5
 one_shot = true
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="DeadlockTimer" type="Timer" parent="."]
+wait_time = 0.5
+one_shot = true
+
+[node name="ScoreBoard" type="VBoxContainer" parent="."]
 margin_left = 49.0
 margin_top = 56.0
 margin_right = 109.0
 margin_bottom = 166.0
 
-[node name="FireScore" type="Label" parent="VBoxContainer"]
+[node name="FireScore" type="Label" parent="ScoreBoard"]
 margin_right = 135.0
 margin_bottom = 38.0
 theme = ExtResource( 3 )
 text = "Fire: 0"
 
-[node name="Wind" type="Label" parent="VBoxContainer"]
+[node name="Wind" type="Label" parent="ScoreBoard"]
 margin_top = 42.0
 margin_right = 135.0
 margin_bottom = 80.0
 theme = ExtResource( 3 )
 text = "Wind: 0"
 
-[node name="Earth" type="Label" parent="VBoxContainer"]
+[node name="Earth" type="Label" parent="ScoreBoard"]
 margin_top = 84.0
 margin_right = 135.0
 margin_bottom = 122.0
 theme = ExtResource( 3 )
 text = "Earth: 0"
 
-[node name="Water" type="Label" parent="VBoxContainer"]
+[node name="Water" type="Label" parent="ScoreBoard"]
 margin_top = 126.0
 margin_right = 135.0
 margin_bottom = 164.0
 theme = ExtResource( 3 )
 text = "Water: 0"
 
-[node name="XP" type="Label" parent="VBoxContainer"]
+[node name="XP" type="Label" parent="ScoreBoard"]
 margin_top = 168.0
 margin_right = 135.0
 margin_bottom = 206.0
 theme = ExtResource( 3 )
 text = "XP: 0"
 
-[node name="Gold" type="Label" parent="VBoxContainer"]
+[node name="Gold" type="Label" parent="ScoreBoard"]
 margin_top = 210.0
 margin_right = 135.0
 margin_bottom = 248.0
@@ -89,3 +93,4 @@ text = "Gold: 0"
 [connection signal="timeout" from="DestroyTimer" to="PlayArea" method="_on_DestroyTimer_timeout"]
 [connection signal="timeout" from="CollapseTimer" to="PlayArea" method="_on_CollapseTimer_timeout"]
 [connection signal="timeout" from="RefillTimer" to="PlayArea" method="_on_RefillTimer_timeout"]
+[connection signal="timeout" from="DeadlockTimer" to="PlayArea" method="_on_DeadlockTimer_timeout"]

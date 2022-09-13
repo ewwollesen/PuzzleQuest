@@ -27,6 +27,8 @@ var possible_gems: Array = [
 
 # Current pieces in the scene
 var all_gems: Array = []
+var clone_array: Array = []
+var current_matches: Array = []
 
 # Click  variables
 var first_click: Vector2 = Vector2.ZERO
@@ -54,22 +56,32 @@ var xp_score: int = 0
 onready var destroyTimer: = $"../DestroyTimer"
 onready var collapseTimer: = $"../CollapseTimer"
 onready var refillTimer: = $"../RefillTimer"
-onready var fireScore: = $"../VBoxContainer/FireScore"
-onready var windScore: = $"../VBoxContainer/Wind"
-onready var earthScore: = $"../VBoxContainer/Earth"
-onready var waterScore: = $"../VBoxContainer/Water"
-onready var xpScore: = $"../VBoxContainer/XP"
-onready var goldScore: = $"../VBoxContainer/Gold"
+onready var deadlockTimer: = $"../DeadlockTimer"
+onready var fireScore: = $"../ScoreBoard/FireScore"
+onready var windScore: = $"../ScoreBoard/Wind"
+onready var earthScore: = $"../ScoreBoard/Earth"
+onready var waterScore: = $"../ScoreBoard/Water"
+onready var xpScore: = $"../ScoreBoard/XP"
+onready var goldScore: = $"../ScoreBoard/Gold"
 
 func _ready() -> void:
 	state = MOVE
 	all_gems = make_array()
+	clone_array = make_array()
 	spawn_gems()
 
 
 func _process(_delta: float) -> void:
 	if state == MOVE:
 		ui_click()
+
+
+func is_in_array(array: Array, item: Vector2) -> bool:
+	if array != null:
+		for items in array.size():
+			if array[items] == item:
+				return true
+	return false
 
 
 func make_array() -> Array:
@@ -99,16 +111,24 @@ func spawn_gems():
 			add_child(gem)
 			gem.position = grid_to_pixel(column, row)
 			all_gems[column][row] = gem
+	if is_no_matches():
+		deadlockTimer.start()
+
+
+func is_piece_null(column: int, row: int) -> bool:
+	if all_gems[column][row] == null:
+		return true
+	return false
 
 
 func match_at(column: int, row: int, type: String) -> bool:
 	if column > 1:
-		if all_gems[column - 1][row] != null and all_gems[column - 2][row]:
+		if not is_piece_null(column - 1, row) and all_gems[column - 2][row]:
 			if all_gems[column - 1][row].type == type and all_gems[column - 2][row].type == type:
 				return true
 
 	if row > 1:
-		if all_gems[column][row - 1] != null and all_gems[column][row - 2]:
+		if not is_piece_null(column, row -1) and all_gems[column][row - 2]:
 			if all_gems[column][row - 1].type == type and all_gems[column][row - 2].type == type:
 				return true
 	return false
@@ -144,7 +164,7 @@ func ui_click() -> void:
 			controlling = false
 			final_click = pixel_to_grid(get_global_mouse_position().x, get_global_mouse_position().y)
 			click_difference(first_click, final_click)
-				
+
 
 func swap_gems(column: int, row: int, direction: Vector2) -> void:
 	var first_gem: Node2D = all_gems[column][row]
@@ -176,7 +196,7 @@ func swap_back():
 	move_checked = false
 	print("no match")
 
-		
+
 func click_difference(grid_start, grid_end) -> void:
 	var difference: Vector2 = grid_end - grid_start
 	if abs(difference.x) > abs(difference.y):
@@ -191,31 +211,36 @@ func click_difference(grid_start, grid_end) -> void:
 			swap_gems(grid_start.x, grid_start.y, Vector2.UP)
 
 
-func find_matches() -> void:
+func find_matches(query: bool = false, array: Array = all_gems):
 	for column in WIDTH:
 		for row in HEIGHT:
-			if all_gems[column][row] != null:
-				var current_type: String = all_gems[column][row].type
+			if array[column][row] != null:
+				var current_type: String = array[column][row].type
 				if column > 0 and column < WIDTH - 1:
-					if all_gems[column - 1][row] != null and all_gems[column + 1][row] != null:
-						if all_gems[column - 1][row].type == current_type and all_gems[column + 1][row].type == current_type:
-							all_gems[column - 1][row].matched = true
-							all_gems[column - 1][row].dim()
-							all_gems[column][row].matched = true
-							all_gems[column][row].dim()
-							all_gems[column + 1][row].matched = true
-							all_gems[column + 1][row].dim()
+					if not is_piece_null(column -1, row) and not is_piece_null(column + 1, row):
+						if array[column - 1][row].type == current_type and array[column + 1][row].type == current_type:
+							if query:
+								return true
+							match_and_dim(array[column - 1][row])
+							match_and_dim(array[column][row])
+							match_and_dim(array[column + 1][row])
 				if row > 0 and row < HEIGHT - 1:
-					if all_gems[column][row - 1] != null and all_gems[column][row + 1] != null:
-						if all_gems[column][row - 1].type == current_type and all_gems[column][row + 1].type == current_type:
-							all_gems[column][row - 1].matched = true
-							all_gems[column][row - 1].dim()
-							all_gems[column][row].matched = true
-							all_gems[column][row].dim()
-							all_gems[column][row + 1].matched = true
-							all_gems[column][row + 1].dim()
+					if not is_piece_null(column, row -1) and not is_piece_null(column, row + 1):
+						if array[column][row - 1].type == current_type and array[column][row + 1].type == current_type:
+							if query:
+								return true
+							match_and_dim(array[column][row - 1])
+							match_and_dim(array[column][row])
+							match_and_dim(array[column][row + 1])
+	if query:
+		return false
 	destroyTimer.start()
-	
+
+
+func match_and_dim(gem: Object) -> void:
+	gem.matched = true
+	gem.dim()
+
 
 func keep_score(type):
 	print(type)
@@ -249,7 +274,7 @@ func destroy_match() -> void:
 	var was_matched: bool = false
 	for column in WIDTH:
 		for row in HEIGHT:
-			if all_gems[column][row] != null:
+			if not is_piece_null(column, row):
 				if all_gems[column][row].matched:
 					was_matched = true
 					keep_score(all_gems[column][row].type)
@@ -265,7 +290,7 @@ func destroy_match() -> void:
 func collapse_columns() -> void:
 	for column in WIDTH:
 		for row in HEIGHT:
-			if all_gems[column][row] == null:
+			if is_piece_null(column, row):
 				for cell in range(row + 1, HEIGHT):
 					if all_gems[column][cell] != null:
 						all_gems[column][cell].collapse(grid_to_pixel(column, row))
@@ -280,7 +305,7 @@ func refill_columns() -> void:
 	rng.randomize()
 	for column in WIDTH:
 		for row in HEIGHT:
-			if all_gems[column][row] == null:
+			if is_piece_null(column, row):
 				# Choose a random number
 				var rand: int = rng.randi_range(0, possible_gems.size() - 1)
 				# Instance that piece from the array
@@ -300,13 +325,93 @@ func refill_columns() -> void:
 func after_refill() -> void:
 	for column in WIDTH:
 		for row in HEIGHT:
-			if all_gems[column][row] != null:
+			if not is_piece_null(column, row):
 				if match_at(column, row, all_gems[column][row].type):
 					find_matches()
 					destroyTimer.start()
 					return
 	state = MOVE
 	move_checked = false
+	if is_no_matches():
+		print("No matches")
+		deadlockTimer.start()
+
+
+func switch_gems(place: Vector2, direction: Vector2, array: Array) -> void:
+	if is_in_grid(place):
+		if is_in_grid(place + direction):
+			# First hold the piece to swap with
+			var holder = array[place.x + direction.x][place.y + direction.y]
+			# Then set the swap spot as the original piece
+			array[place.x + direction.x][place.y + direction.y] = array[place.x][place.y]
+			# Then set the original spot as the other piece
+			array[place.x][place.y] = holder
+
+
+func switch_and_check(place: Vector2, direction: Vector2, array: Array) -> bool:
+	switch_gems(place, direction, array)
+	if find_matches(true, array):
+		switch_gems(place, direction, array)
+		return true
+	switch_gems(place, direction, array)
+	return false
+
+
+func is_no_matches() -> bool:
+	# Create copy of main array
+	clone_array = copy_array(all_gems)
+	for column in WIDTH:
+		for row in HEIGHT:
+			# Switch and check right
+			if switch_and_check(Vector2(column, row), Vector2.RIGHT, clone_array):
+				return false
+			# Switch and check up
+			if switch_and_check(Vector2(column, row), Vector2.UP, clone_array):
+				return false
+	return true
+
+
+func copy_array(array_to_copy: Array) -> Array:
+	var new_array: Array = make_array()
+	for column in WIDTH:
+		for row in HEIGHT:
+			new_array[column][row] = array_to_copy[column][row]
+	return new_array
+
+
+func clear_and_store_board() -> Array:
+	var holder_array: Array = []
+	for column in WIDTH:
+		for row in HEIGHT:
+			if not is_piece_null(column, row):
+				holder_array.append(all_gems[column][row])
+				all_gems[column][row] = null
+	return holder_array
+
+
+func shuffle_board():
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var holder_array: Array = clear_and_store_board()
+	for column in WIDTH:
+		for row in HEIGHT:
+			if all_gems[column][row] == null:
+				# Choose a random number
+				var rand: int = rng.randi_range(0, holder_array.size() - 1)
+				# Instance that piece from the array
+				var gem = holder_array[rand]
+				var count: int = 0
+				while(match_at(column, row, gem.type) and count < 100):
+					rand = rng.randi_range(0, holder_array.size() - 1)
+					gem = holder_array[rand]
+					count += 1
+				gem.move(grid_to_pixel(column, row))
+				all_gems[column][row] = gem
+				holder_array.remove(rand)
+	if is_no_matches():
+		deadlockTimer.start()
+	state = MOVE
+
 
 
 func _on_DestroyTimer_timeout():
@@ -319,3 +424,7 @@ func _on_CollapseTimer_timeout():
 
 func _on_RefillTimer_timeout():
 	refill_columns()
+
+
+func _on_DeadlockTimer_timeout():
+	shuffle_board()
