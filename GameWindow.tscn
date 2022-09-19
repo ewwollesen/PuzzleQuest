@@ -43,6 +43,10 @@ one_shot = true
 wait_time = 0.5
 one_shot = true
 
+[node name="HintTimer" type="Timer" parent="."]
+wait_time = 3.0
+one_shot = true
+
 [node name="ScoreBoard" type="VBoxContainer" parent="."]
 margin_left = 49.0
 margin_top = 56.0
@@ -94,3 +98,4 @@ text = "Gold: 0"
 [connection signal="timeout" from="CollapseTimer" to="PlayArea" method="_on_CollapseTimer_timeout"]
 [connection signal="timeout" from="RefillTimer" to="PlayArea" method="_on_RefillTimer_timeout"]
 [connection signal="timeout" from="DeadlockTimer" to="PlayArea" method="_on_DeadlockTimer_timeout"]
+[connection signal="timeout" from="HintTimer" to="PlayArea" method="_on_HintTimer_timeout"]

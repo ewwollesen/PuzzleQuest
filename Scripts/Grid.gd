@@ -53,10 +53,16 @@ var wind_score: int = 0
 var gold_score: int = 0
 var xp_score: int = 0
 
+# Hint variables
+var hint: Object = null
+var hint_effect: PackedScene = preload("res://HintEffect.tscn")
+var match_type: String = ""
+
 onready var destroyTimer: = $"../DestroyTimer"
 onready var collapseTimer: = $"../CollapseTimer"
 onready var refillTimer: = $"../RefillTimer"
 onready var deadlockTimer: = $"../DeadlockTimer"
+onready var hintTimer: = $"../HintTimer"
 onready var fireScore: = $"../ScoreBoard/FireScore"
 onready var windScore: = $"../ScoreBoard/Wind"
 onready var earthScore: = $"../ScoreBoard/Earth"
@@ -113,10 +119,11 @@ func spawn_gems():
 			all_gems[column][row] = gem
 	if is_no_matches():
 		deadlockTimer.start()
+	hintTimer.start()
 
 
-func is_piece_null(column: int, row: int) -> bool:
-	if all_gems[column][row] == null:
+func is_piece_null(column: int, row: int, array: Array = all_gems) -> bool:
+	if array[column][row] == null:
 		return true
 	return false
 
@@ -158,7 +165,7 @@ func ui_click() -> void:
 		if is_in_grid(pixel_to_grid(get_global_mouse_position().x, get_global_mouse_position().y)):
 			first_click = pixel_to_grid(get_global_mouse_position().x, get_global_mouse_position().y)
 			controlling = true
-			
+			destroy_hint()
 	if Input.is_action_just_released("ui_click"):
 		if is_in_grid(pixel_to_grid(get_global_mouse_position().x, get_global_mouse_position().y)) and controlling:
 			controlling = false
@@ -194,6 +201,7 @@ func swap_back():
 		swap_gems(last_position.x, last_position.y, last_direction)
 	state = MOVE
 	move_checked = false
+	hintTimer.start()
 	print("no match")
 
 
@@ -217,17 +225,19 @@ func find_matches(query: bool = false, array: Array = all_gems):
 			if array[column][row] != null:
 				var current_type: String = array[column][row].type
 				if column > 0 and column < WIDTH - 1:
-					if not is_piece_null(column -1, row) and not is_piece_null(column + 1, row):
+					if array[column -1][row] != null and array[column + 1][row] != null:
 						if array[column - 1][row].type == current_type and array[column + 1][row].type == current_type:
 							if query:
+								match_type = current_type 
 								return true
 							match_and_dim(array[column - 1][row])
 							match_and_dim(array[column][row])
 							match_and_dim(array[column + 1][row])
 				if row > 0 and row < HEIGHT - 1:
-					if not is_piece_null(column, row -1) and not is_piece_null(column, row + 1):
+					if array[column][row -1] != null and array[column][row + 1] != null:
 						if array[column][row - 1].type == current_type and array[column][row + 1].type == current_type:
 							if query:
+								match_type = current_type
 								return true
 							match_and_dim(array[column][row - 1])
 							match_and_dim(array[column][row])
@@ -282,6 +292,7 @@ func destroy_match() -> void:
 					all_gems[column][row] = null
 	move_checked = true
 	if was_matched:
+		destroy_hint()
 		collapseTimer.start()
 	else:
 		swap_back()
@@ -335,6 +346,7 @@ func after_refill() -> void:
 	if is_no_matches():
 		print("No matches")
 		deadlockTimer.start()
+	hintTimer.start()
 
 
 func switch_gems(place: Vector2, direction: Vector2, array: Array) -> void:
@@ -413,6 +425,49 @@ func shuffle_board():
 	state = MOVE
 
 
+func find_all_matches() -> Array:
+	var match_holder: Array = []
+	clone_array = copy_array(all_gems)
+	for column in WIDTH:
+		for row in HEIGHT:
+			if not is_piece_null(column, row):
+				if switch_and_check(Vector2(column, row), Vector2(1,0), clone_array) and is_in_grid(Vector2(column + 1, row)):
+					#add piece column,row to match_holder
+					if match_type != "":
+						if match_type == clone_array[column][row].type:
+							match_holder.append(clone_array[column][row])
+						else:
+							match_holder.append(clone_array[column + 1][row])
+						
+				if switch_and_check(Vector2(column, row), Vector2(0,1), clone_array) and is_in_grid(Vector2(column, row + 1)):
+					#add piece column,row to match_holder
+					if match_type != "":
+						if match_type == clone_array[column][row].type:
+							match_holder.append(clone_array[column][row])
+						else:
+							match_holder.append(clone_array[column][row + 1])
+	return match_holder
+
+
+func generate_hint() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var hints: Array = find_all_matches()
+	if hints != null:
+		if hints.size() > 0:
+			destroy_hint()
+			var rand: int = rng.randi_range(0, hints.size() - 1)
+			hint = hint_effect.instance()
+			add_child(hint)
+			hint.position = hints[rand].position
+			hint.setup(hints[rand].get_node("Sprite").texture)
+
+
+func destroy_hint():
+	if hint:
+		hint.queue_free()
+		hint = null
+
 
 func _on_DestroyTimer_timeout():
 	destroy_match()
@@ -428,3 +483,7 @@ func _on_RefillTimer_timeout():
 
 func _on_DeadlockTimer_timeout():
 	shuffle_board()
+
+
+func _on_HintTimer_timeout():
+	generate_hint()
