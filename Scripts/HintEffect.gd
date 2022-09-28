@@ -6,13 +6,13 @@ onready var colorTween: = $ColorTween
 
 func _ready():
 	setup(this_sprite.texture)
-	print(this_sprite.texture)
+#	print(this_sprite.texture)
 
 
 func setup(new_sprite: StreamTexture) -> void:
-	print("new_sprite: ", new_sprite)
+#	print("new_sprite: ", new_sprite)
 	this_sprite.texture = new_sprite
-	print("setup texture: ", this_sprite.texture)
+#	print("setup texture: ", this_sprite.texture)
 	resize()
 	dim()
 

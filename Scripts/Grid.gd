@@ -179,8 +179,6 @@ func swap_gems(column: int, row: int, direction: Vector2) -> void:
 	if first_gem != null and other_gem != null:
 		store_gems(first_gem, other_gem, Vector2(column, row), direction)
 		state = WAIT
-		#print("First_gem column: ", column, " row: ", row)
-		#print("Other_gem column: ", column, " row: ", row)
 		all_gems[column][row] = other_gem
 		all_gems[column + direction.x][row + direction.y] = first_gem
 		first_gem.move(grid_to_pixel(column + direction.x, row + direction.y))
@@ -253,31 +251,31 @@ func match_and_dim(gem: Object) -> void:
 
 
 func keep_score(type):
-	print(type)
+#	print(type)
 	if type == "earth":
 		earth_score += 1
 		earthScore.text = "Earth: {0}".format([earth_score])
-		print("earth: ", earth_score)
+#		print("earth: ", earth_score)
 	elif type == "fire":
 		fire_score += 1
 		fireScore.text = "Fire: {0}".format([fire_score])
-		print("fire: ", fire_score)
+#		print("fire: ", fire_score)
 	elif type == "water":
 		water_score += 1
 		waterScore.text = "Water: {0}".format([water_score])
-		print("water: ", water_score)
+#		print("water: ", water_score)
 	elif type == "wind":
 		wind_score += 1
 		windScore.text = "Wind: {0}".format([wind_score])
-		print("wind: ", wind_score)
+#		print("wind: ", wind_score)
 	elif type == "gold":
 		gold_score += 1
 		goldScore.text = "Gold: {0}".format([gold_score])
-		print("gold: ", gold_score)
+#		print("gold: ", gold_score)
 	elif type == "xp":
 		xp_score += 1
 		xpScore.text = "XP: {0}".format([xp_score])
-		print("xp: ", xp_score)
+#		print("xp: ", xp_score)
 
 
 func destroy_match() -> void:
@@ -367,7 +365,6 @@ func switch_and_check(place: Vector2, direction: Vector2, array: Array) -> bool:
 		return true
 	switch_gems(place, direction, array)
 	return false
-
 
 func is_no_matches() -> bool:
 	# Create copy of main array
@@ -469,6 +466,58 @@ func destroy_hint():
 		hint = null
 
 
+func ai_move():
+	destroy_hint()
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var moves: Array = find_all_matches()
+	print(moves)
+	if moves != null:
+		if moves.size() > 0:
+			var rand: int = rng.randi_range(0, moves.size() - 1)
+			var gem = pixel_to_grid(moves[rand].position.x, moves[rand].position.y)
+			var column = gem.x
+			var row = gem.y
+			print("gem: ", gem)
+#			swap_gems(gem.x, gem.y, Vector2.RIGHT)
+			#func switch_and_check(place: Vector2, direction: Vector2, array: Array) -> bool:
+			clone_array = copy_array(all_gems)
+			if switch_and_check(gem, Vector2(1,0), clone_array) and is_in_grid(Vector2(column + 1, row)):
+				#add piece column,row to match_holder
+				if match_type != "":
+					if match_type == clone_array[column][row].type:
+						swap_gems(column, row, Vector2(1,0))
+						print("test 1")
+#					else:
+#						swap_gems(column + 1, row, Vector2(1,0))
+						
+			elif switch_and_check(gem, Vector2(0,1), clone_array) and is_in_grid(Vector2(column, row + 1)):
+				#add piece column,row to match_holder
+				if match_type != "":
+					if match_type == clone_array[column][row].type:
+						swap_gems(column, row, Vector2(0, 1))
+						print("test2")
+#					else:
+#						swap_gems(column, row +1, Vector2(1,0))
+			
+			elif switch_and_check(gem, Vector2(-1,0), clone_array) and is_in_grid(Vector2(column - 1, row)):
+				#add piece column,row to match_holder
+				if match_type != "":
+					if match_type == clone_array[column][row].type:
+						swap_gems(column, row, Vector2(-1,0))
+						print("test3")
+#					else:
+#						swap_gems(column - 1, row, Vector2(-1,0))
+						
+			elif switch_and_check(gem, Vector2(0,-1), clone_array) and is_in_grid(Vector2(column, row - 1)):
+				#add piece column,row to match_holder
+				if match_type != "":
+					if match_type == clone_array[column][row].type:
+						swap_gems(column, row, Vector2(0, -1))
+						print("test4")
+#					else:
+#						swap_gems(column, row -1, Vector2(-1,0))
+
 func _on_DestroyTimer_timeout():
 	destroy_match()
 
@@ -487,3 +536,8 @@ func _on_DeadlockTimer_timeout():
 
 func _on_HintTimer_timeout():
 	generate_hint()
+
+
+func _on_Button_button_up() -> void:
+	print("Pressed")
+	ai_move()

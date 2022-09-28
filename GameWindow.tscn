@@ -94,8 +94,16 @@ margin_bottom = 248.0
 theme = ExtResource( 3 )
 text = "Gold: 0"
 
+[node name="Button" type="Button" parent="."]
+margin_left = 467.0
+margin_top = 483.0
+margin_right = 734.0
+margin_bottom = 528.0
+text = "AI TURN"
+
 [connection signal="timeout" from="DestroyTimer" to="PlayArea" method="_on_DestroyTimer_timeout"]
 [connection signal="timeout" from="CollapseTimer" to="PlayArea" method="_on_CollapseTimer_timeout"]
 [connection signal="timeout" from="RefillTimer" to="PlayArea" method="_on_RefillTimer_timeout"]
 [connection signal="timeout" from="DeadlockTimer" to="PlayArea" method="_on_DeadlockTimer_timeout"]
 [connection signal="timeout" from="HintTimer" to="PlayArea" method="_on_HintTimer_timeout"]
+[connection signal="button_up" from="Button" to="PlayArea" method="_on_Button_button_up"]
